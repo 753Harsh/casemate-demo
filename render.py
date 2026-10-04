@@ -107,7 +107,7 @@ def tts(client, voice, text, path):
             if "language" in msg.lower() or "400" in msg:
                 no_lang = True
                 continue
-            time.sleep(20 * (attempt + 1))
+            time.sleep(5 * (attempt + 1))
     raise SystemExit("TTS failed repeatedly")
 
 def make_audio():
@@ -118,7 +118,8 @@ def make_audio():
                 w.writeframes(b"\x00\x00" * int(24000 * len(text.split()) / 2.6))
         return
     from google import genai
-    client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+    from google.genai import types as gtypes
+    client = genai.Client(api_key=os.environ["GEMINI_API_KEY"], http_options=gtypes.HttpOptions(timeout=90_000))
     voice = pick_voice(client)
     print("Using voice:", voice)
     for name, text in SCENES:
@@ -430,11 +431,6 @@ def main():
                             "-c:v", "libx264", "-preset", "medium", "-crf", "22", "-pix_fmt", "yuv420p", "-r", "30",
                             "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart", str(OUT / "CaseMate_Demo.mp4")], check=True)
             print("VIDEO DONE")
-        try:
-            report_pass(browser)
-            print("SHOTS DONE")
-        except Exception as exc:
-            print("Report pass problem:", repr(exc)[:500])
         browser.close()
 
 if __name__ == "__main__":
