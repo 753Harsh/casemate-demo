@@ -170,7 +170,7 @@ class Demo:
         loc.fill("")
         loc.press_sequentially(text, delay=delay)
         loc.press("Tab")
-        time.sleep(0.3)
+        time.sleep(1.5)
 
     def scroll(self, pixels, step=60, pause=0.03):
         self.page.mouse.move(self.w * 0.62, self.h * 0.6)
@@ -270,20 +270,23 @@ def act(name, d):
         for i in range(boxes.count()):
             d.type(boxes.nth(i), ANSWERS[i % 3])
         d.click(p.get_by_role("button", name="Get feedback"))
-        d.wait_text("Rubric score")
+        d.spin("reviewing your answers")
+        d.wait_text("Rule-based evidence check")
     elif name == "feedback":
         d.scroll_to_text("③ Feedback", offset=70)
         time.sleep(3)
-        d.scroll_to_text("What you did well", offset=110)
-        time.sleep(3)
-        d.scroll_to_text("Think further", offset=200)
-        time.sleep(2)
+        if p.get_by_text("What you did well").count():
+            d.scroll_to_text("What you did well", offset=110)
+            time.sleep(3)
+            d.scroll_to_text("Think further", offset=200)
+            time.sleep(2)
         d.scroll_to_text("Rule-based evidence check", offset=160)
     elif name == "integrity":
         box = answer_boxes(p).first
         d.move_to(box)
         d.type(box, CHEAT, delay=10)
         d.click(p.get_by_role("button", name="Get feedback"))
+        d.spin("reviewing your answers")
         d.wait_text("Integrity flag")
         d.scroll_to_text("Integrity flag", offset=200)
     elif name == "safety":
@@ -355,23 +358,23 @@ def report_pass(browser):
     log["questions"] = main_text(p)
     boxes = answer_boxes(p)
     for i in range(boxes.count()):
-        boxes.nth(i).fill(ANSWERS[i % 3]); boxes.nth(i).press("Tab"); time.sleep(0.5)
-    p.get_by_role("button", name="Get feedback").click(); d.wait_text("Rubric score"); time.sleep(3)
+        boxes.nth(i).fill(ANSWERS[i % 3]); boxes.nth(i).press("Tab"); time.sleep(1.5)
+    p.get_by_role("button", name="Get feedback").click(); d.spin("reviewing your answers"); d.wait_text("Rule-based evidence check")
     d.scroll_to_text("③ Feedback", offset=40); shot("04_feedback")
-    d.scroll_to_text("What you did well", offset=60); shot("05_feedback_detail")
+    if p.get_by_text("What you did well").count(): d.scroll_to_text("What you did well", offset=60); shot("05_feedback_detail")
     log["feedback"] = main_text(p)
     # weak answers: generic text with no case facts
     weak = ("The company has many strengths and some weaknesses. It should focus on its customers, improve its "
             "operations and think about the competition before making any big decision about growth in the future.")
     for i in range(boxes.count()):
-        boxes.nth(i).fill(weak); boxes.nth(i).press("Tab"); time.sleep(0.5)
-    p.get_by_role("button", name="Get feedback").click(); d.spin("reviewing your answers"); d.wait_text("Rubric score")
+        boxes.nth(i).fill(weak); boxes.nth(i).press("Tab"); time.sleep(1.5)
+    p.get_by_role("button", name="Get feedback").click(); d.spin("reviewing your answers"); d.wait_text("Rule-based evidence check")
     d.scroll_to_text("③ Feedback", offset=40); shot("06_weak_feedback")
     log["weak_feedback"] = main_text(p)
-    boxes.first.fill(CHEAT); boxes.first.press("Tab"); time.sleep(0.5)
+    boxes.first.fill(CHEAT); boxes.first.press("Tab"); time.sleep(1.5)
     for i in range(1, boxes.count()):
-        boxes.nth(i).fill(ANSWERS[i % 3]); boxes.nth(i).press("Tab"); time.sleep(0.5)
-    p.get_by_role("button", name="Get feedback").click(); d.wait_text("Integrity flag"); time.sleep(3)
+        boxes.nth(i).fill(ANSWERS[i % 3]); boxes.nth(i).press("Tab"); time.sleep(1.5)
+    p.get_by_role("button", name="Get feedback").click(); d.spin("reviewing your answers"); d.wait_text("Integrity flag")
     d.scroll_to_text("Integrity flag", offset=200); shot("07_integrity")
     log["integrity"] = main_text(p)
     # Porter on the VoltRide case
