@@ -23,6 +23,6 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
-          git add output/audio output/timeline.json output/CaseMate_Demo.mp4 output/shots output/live_log.json 2>/dev/null || true
+          for f in output/audio output/timeline.json output/CaseMate_Demo.mp4 output/shots output/live_log.json; do [ -e "$f" ] && git add "$f"; done
           git commit -m "Rendered outputs" || true
           git push || true
