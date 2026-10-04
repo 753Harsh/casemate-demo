@@ -8,14 +8,15 @@ Records a narrated walkthrough of the live CaseMate app and saves report screens
 5. A final pass with a taller window saves still screenshots and the live text for the report.
 """
 
-import base64, json, os, subprocess, time, wave
+import base64, json, os, subprocess, sys, time, wave
+sys.stdout.reconfigure(line_buffering=True)
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 APP = os.environ.get("APP_URL", "https://casemate-harsh.streamlit.app/~/+/")
 LOCAL = bool(os.environ.get("APP_URL"))
 OUT = Path("output"); OUT.mkdir(exist_ok=True)
-AUD = OUT / "audio"; AUD.mkdir(exist_ok=True)
+AUD = OUT / "audio_edge"; AUD.mkdir(exist_ok=True)
 SHOTS = OUT / "shots"; SHOTS.mkdir(exist_ok=True)
 W, H = 1280, 720
 STYLE = ("Indian English accent. A calm, articulate MBA student walking her professors through her project. "
@@ -111,23 +112,23 @@ def tts(client, voice, text, path):
     raise SystemExit("TTS failed repeatedly")
 
 def make_audio():
-    if LOCAL:
-        for name, text in SCENES:
-            with wave.open(str(AUD / f"{name}.wav"), "wb") as w:
-                w.setnchannels(1); w.setsampwidth(2); w.setframerate(24000)
-                w.writeframes(b"\x00\x00" * int(24000 * len(text.split()) / 2.6))
-        return
-    from google import genai
-    from google.genai import types as gtypes
-    client = genai.Client(api_key=os.environ["GEMINI_API_KEY"], http_options=gtypes.HttpOptions(timeout=90_000))
-    voice = pick_voice(client)
-    print("Using voice:", voice)
+    # Microsoft Edge neural voice, Indian English (female). No API key or quota needed.
+    subprocess.run([sys.executable, "-m", "pip", "install", "-q", "edge-tts"], check=True)
+    import asyncio, edge_tts
+    async def one(text, mp3):
+        await edge_tts.Communicate(text, "en-IN-NeerjaNeural", rate="-4%").save(str(mp3))
     for name, text in SCENES:
-        p = AUD / f"{name}.wav"
-        if not p.exists():
-            tts(client, voice, text, p)
-            time.sleep(4)
-        print(f"{name}: {wav_seconds(p):.1f}s")
+        wav = AUD / f"{name}.wav"
+        if wav.exists():
+            continue
+        mp3 = AUD / f"{name}.mp3"
+        for attempt in range(4):
+            try:
+                asyncio.run(one(text, mp3)); break
+            except Exception as exc:
+                print("edge-tts retry", name, repr(exc)[:200]); time.sleep(3)
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(mp3), "-ar", "24000", "-ac", "1", str(wav)], check=True)
+        print(f"{name}: {wav_seconds(wav):.1f}s")
 
 # ------------------------------------------------------------------ browser helpers
 CURSOR_JS = """
@@ -181,7 +182,7 @@ class Demo:
 
     def scroll_to_text(self, text, offset=120):
         loc = self.page.get_by_text(text, exact=False).locator("visible=true").first
-        loc.wait_for(timeout=120000)
+        loc.wait_for(timeout=45000)
         for _ in range(80):
             b = loc.bounding_box()
             if b is None or abs(b["y"] - offset) < 50:
@@ -200,10 +201,10 @@ class Demo:
             loc.first.wait_for(state="visible", timeout=6000)
         except Exception:
             pass
-        loc.first.wait_for(state="hidden", timeout=150000)
+        loc.first.wait_for(state="hidden", timeout=90000)
         time.sleep(1.5)
 
-    def wait_text(self, text, timeout=120000):
+    def wait_text(self, text, timeout=60000):
         self.page.get_by_text(text, exact=False).locator("visible=true").first.wait_for(timeout=timeout)
 
 def title_html(big, sub, small):
@@ -324,8 +325,14 @@ def run_scenes(browser, record):
     for name, _ in SCENES:
         dur = wav_seconds(AUD / f"{name}.wav")
         start = time.monotonic() - t0
-        act(name, d)
-        page.evaluate("window.getSelection().removeAllRanges()")
+        try:
+            act(name, d)
+        except Exception as exc:
+            print("SCENE PROBLEM", name, repr(exc)[:300])
+        try:
+            page.evaluate("window.getSelection().removeAllRanges()")
+        except Exception:
+            pass
         if name in ("intro", "close"):
             page.evaluate(CURSOR_JS)
         elapsed = time.monotonic() - t0 - start
