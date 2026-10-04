@@ -1,0 +1,56 @@
+[
+ {
+  "scene": "intro",
+  "start": 0.0,
+  "audio": 19.03,
+  "actions": 11.86
+ },
+ {
+  "scene": "problem",
+  "start": 19.63,
+  "audio": 20.88,
+  "actions": 5.47
+ },
+ {
+  "scene": "case",
+  "start": 41.11,
+  "audio": 16.78,
+  "actions": 7.08
+ },
+ {
+  "scene": "questions",
+  "start": 58.49,
+  "audio": 22.92,
+  "actions": 6.8
+ },
+ {
+  "scene": "answer",
+  "start": 82.01,
+  "audio": 10.51,
+  "actions": 24.45
+ },
+ {
+  "scene": "feedback",
+  "start": 106.46,
+  "audio": 27.12,
+  "actions": 10.04
+ },
+ {
+  "scene": "integrity",
+  "start": 134.19,
+  "audio": 20.71,
+  "actions": 14.09
+ },
+ {
+  "scene": "safety",
+  "start": 155.5,
+  "audio": 24.62,
+  "actions": 16.32
+ },
+ {
+  "scene": "close",
+  "start": 180.72,
+  "audio": 12.38,
+  "actions": 0.01
+ }
+]
